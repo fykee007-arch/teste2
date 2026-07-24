@@ -6,7 +6,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
    Name = "# Murder Nice",
    LoadingTitle = "Murder Mystery 2",
-   LoadingSubtitle = "by Grok",
+   LoadingSubtitle = "by FyKe",
    ConfigurationSaving = { Enabled = false },
    Discord = { Enabled = false },
    KeySystem = false,
@@ -47,35 +47,42 @@ end
 local function GetRole(plr)
 	if not plr then return "Innocent" end
 	
-	-- Leaderstats (principal)
+	-- 1. Leaderstats
 	local ls = plr:FindFirstChild("leaderstats")
 	if ls then
 		for _, v in pairs(ls:GetChildren()) do
 			if v:IsA("StringValue") then
 				local val = tostring(v.Value):lower()
-				if val:find("murderer") or val:find("murd") then return "Murderer" end
-				if val:find("sheriff") or val:find("xerife") then return "Sheriff" end
+				if val:find("murder") or val:find("murd") then return "Murderer" end
+				if val:find("sheriff") or val:find("xerife") or val:find("police") then return "Sheriff" end
 			end
 		end
 	end
 	
-	-- Backup: Tools no Backpack ou Character
+	-- 2. Backpack (Inventário)
 	local backpack = plr:FindFirstChild("Backpack")
 	if backpack then
 		for _, tool in ipairs(backpack:GetChildren()) do
-			local n = tool.Name:lower()
-			if n:find("knife") or n:find("murd") then return "Murderer" end
-			if n:find("gun") or n:find("pistol") or n:find("sheriff") then return "Sheriff" end
+			if tool:IsA("Tool") then
+				local name = tool.Name:lower()
+				if name:find("knife") or name:find("murd") or name:find("assassin") then
+					return "Murderer"
+				end
+				if name:find("gun") or name:find("pistol") or name:find("sheriff") then
+					return "Sheriff"
+				end
+			end
 		end
 	end
 	
+	-- 3. Character (mão)
 	local char = plr.Character
 	if char then
 		for _, tool in ipairs(char:GetChildren()) do
 			if tool:IsA("Tool") then
-				local n = tool.Name:lower()
-				if n:find("knife") then return "Murderer" end
-				if n:find("gun") then return "Sheriff" end
+				local name = tool.Name:lower()
+				if name:find("knife") or name:find("murd") then return "Murderer" end
+				if name:find("gun") or name:find("pistol") then return "Sheriff" end
 			end
 		end
 	end
@@ -140,6 +147,6 @@ MainTab:CreateToggle({
 
 Rayfield:Notify({
    Title = "Murder Nice",
-   Content = "Script carregado! Teste o ESP de Murder agora.",
-   Duration = 6,
+   Content = "Detecção reforçada ativada!",
+   Duration = 5,
 })
