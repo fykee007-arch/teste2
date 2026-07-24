@@ -46,7 +46,7 @@ local function CreateHighlight(target, color)
     table.insert(highlights, hl)
 end
 
--- Detecção por Inventário (Murderer e Sheriff)
+-- Detecção por Inventário
 local function GetRole(plr)
     if not plr or plr == player then return "None" end
     
@@ -98,7 +98,7 @@ local function UpdateESP()
     end
 end
 
--- ==================== MODIFICADOR DE MOEDAS (Melhorado) ====================
+-- ==================== MODIFICADOR DE MOEDAS ====================
 local function AddMoney(amount)
     if not amount or amount <= 0 then 
         Rayfield:Notify({Title = "Erro", Content = "Digite um valor válido!", Duration = 3})
@@ -116,16 +116,16 @@ local function AddMoney(amount)
                       leaderstats:FindFirstChild("Cash")
 
     if moneyValue then
-        local oldValue = moneyValue.Value
-        moneyValue.Value = oldValue + amount
+        local targetValue = moneyValue.Value + amount
+        moneyValue.Value = targetValue
         
-        -- Tenta manter o valor (alguns anti-cheats revertem)
+        -- Força o valor por alguns segundos
         task.spawn(function()
-            for i = 1, 15 do
-                if moneyValue.Value ~= oldValue + amount then
-                    moneyValue.Value = oldValue + amount
+            for i = 1, 20 do
+                if moneyValue.Value ~= targetValue then
+                    moneyValue.Value = targetValue
                 end
-                task.wait(0.2)
+                task.wait(0.15)
             end
         end)
 
@@ -135,7 +135,7 @@ local function AddMoney(amount)
             Duration = 5
         })
     else
-        Rayfield:Notify({Title = "Erro", Content = "Valor de dinheiro não encontrado.", Duration = 4})
+        Rayfield:Notify({Title = "Erro", Content = "Não foi possível encontrar seu dinheiro.", Duration = 4})
     end
 end
 
@@ -207,7 +207,7 @@ MoneyTab:CreateSection("Adicionar Dinheiro")
 
 local MoneyInput = MoneyTab:CreateInput({
    Name = "Quantidade de Dinheiro",
-   PlaceholderText = "Ex: 5000 ou 10000",
+   PlaceholderText = "Ex: 5000",
    RemoveTextOnFocusLost = false,
    Callback = function() end,
 })
@@ -219,12 +219,12 @@ MoneyTab:CreateButton({
       if amount then
          AddMoney(amount)
       else
-         Rayfield:Notify({Title = "Erro", Content = "Por favor, digite um número válido!", Duration = 3})
+         Rayfield:Notify({Title = "Erro", Content = "Digite um número válido!", Duration = 3})
       end
    end,
 })
 
--- ==================== LOOP ESP ====================
+-- ==================== LOOP ====================
 RunService.RenderStepped:Connect(function()
     if ESP.Murderer.Enabled or ESP.Sheriff.Enabled or ESP.Players.Enabled then
         UpdateESP()
