@@ -19,8 +19,8 @@ local player = Players.LocalPlayer
 local highlights = {}
 
 local ESP = {
-    Items = {Enabled = false, Color = Color3.fromHex("#0dbf25")},
-    Entities = {Enabled = false, Color = Color3.fromHex("#ff1100")},
+    Entities = {Enabled = false, Color = Color3.fromHex("#ff1100")},   -- Murderer
+    Sheriff = {Enabled = false, Color = Color3.fromHex("#5696e3")},   -- Xerife (novo)
     Players = {Enabled = false, Color = Color3.fromHex("#c452c4")}
 }
 
@@ -49,59 +49,67 @@ local function CreateHighlight(target, color)
     table.insert(highlights, hl)
 end
 
-local function GetValuableItems()
-    local items = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Tool") or obj.Name:find("Gun") or obj.Name:find("Knife") or 
-           obj.Name:find("Sheriff") or obj.Name:find("Murder") then
-            if obj:FindFirstChild("Handle") then
-                table.insert(items, obj.Handle)
-            end
-        end
-    end
-    return items
-end
-
-local function GetMurderer()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character then
-            local ls = plr:FindFirstChild("leaderstats")
-            if ls then
-                for _, v in pairs(ls:GetChildren()) do
-                    if v:IsA("StringValue") then
-                        local val = v.Value:lower()
-                        if val:find("murder") then 
-                            return plr.Character 
-                        end
-                    end
+-- Detecção por Inventário (mais confiável no MM2)
+local function GetRole(plr)
+    if not plr or plr == player then return "None" end
+    
+    local backpack = plr:FindFirstChild("Backpack")
+    local character = plr.Character
+    
+    -- Verificar Backpack
+    if backpack then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local name = tool.Name:lower()
+                if name:find("knife") or name:find("murd") then
+                    return "Murderer"
+                end
+                if name:find("gun") or name:find("pistol") or name:find("sheriff") then
+                    return "Sheriff"
                 end
             end
         end
     end
-    return nil
+    
+    -- Verificar Character
+    if character then
+        for _, tool in ipairs(character:GetChildren()) do
+            if tool:IsA("Tool") then
+                local name = tool.Name:lower()
+                if name:find("knife") or name:find("murd") then
+                    return "Murderer"
+                end
+                if name:find("gun") or name:find("pistol") or name:find("sheriff") then
+                    return "Sheriff"
+                end
+            end
+        end
+    end
+    
+    return "Innocent"
 end
 
 local function UpdateESP()
     ClearHighlights()
 
-    if ESP.Items.Enabled then
-        for _, item in ipairs(GetValuableItems()) do
-            CreateHighlight(item, ESP.Items.Color)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr == player or not plr.Character then continue end
+        
+        local role = GetRole(plr)
+        
+        -- Murderer
+        if ESP.Entities.Enabled and role == "Murderer" then
+            CreateHighlight(plr.Character, ESP.Entities.Color)
         end
-    end
-
-    if ESP.Entities.Enabled then
-        local murderer = GetMurderer()
-        if murderer then
-            CreateHighlight(murderer, ESP.Entities.Color)
+        
+        -- Sheriff (Xerife)
+        if ESP.Sheriff.Enabled and role == "Sheriff" then
+            CreateHighlight(plr.Character, ESP.Sheriff.Color)
         end
-    end
-
-    if ESP.Players.Enabled then
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                CreateHighlight(plr.Character, ESP.Players.Color)
-            end
+        
+        -- Todos os Players
+        if ESP.Players.Enabled then
+            CreateHighlight(plr.Character, ESP.Players.Color)
         end
     end
 end
@@ -122,7 +130,7 @@ local function StartInfiniteStamina()
     end)
 end
 
--- ==================== NOVA FUNÇÃO MONEY ====================
+-- ==================== MONEY ====================
 local function AddMoney(amount)
     if not amount or amount <= 0 then 
         Rayfield:Notify({Title = "Erro", Content = "Digite um valor válido!", Duration = 3})
@@ -134,16 +142,10 @@ local function AddMoney(amount)
         local moneyValue = leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Coins") or leaderstats:FindFirstChild("Cash")
         if moneyValue then
             moneyValue.Value = moneyValue.Value + amount
-            Rayfield:Notify({
-                Title = "Sucesso!", 
-                Content = "Adicionado +" .. amount .. " de dinheiro!", 
-                Duration = 4
-            })
+            Rayfield:Notify({Title = "Sucesso!", Content = "Adicionado +" .. amount .. "!", Duration = 4})
         else
-            Rayfield:Notify({Title = "Erro", Content = "Não foi possível encontrar sua quantia de dinheiro.", Duration = 4})
+            Rayfield:Notify({Title = "Erro", Content = "Não foi possível encontrar o dinheiro.", Duration = 4})
         end
-    else
-        Rayfield:Notify({Title = "Erro", Content = "Leaderstats não encontrado.", Duration = 4})
     end
 end
 
@@ -151,38 +153,16 @@ end
 local MainTab = Window:CreateTab("🏠 Main", 4483362458)
 local EspTab = Window:CreateTab("ESP", 4483362458)
 local StaminaTab = Window:CreateTab("Stamina", 6031097228)
-local MoneyTab = Window:CreateTab("💰 Money", 6031097228)  -- Nova aba
+local MoneyTab = Window:CreateTab("💰 Money", 6031097228)
 
--- ==================== ABA MAIN (mantida) ====================
-MainTab:CreateSection("Informações")
-MainTab:CreateParagraph({
-    Title = "Murder Nice",
-    Content = "Script feito para Murder Mystery 2"
-})
+-- Main Tab
+MainTab:CreateSection("Murder Nice")
 
 -- ==================== ABA ESP ====================
-EspTab:CreateSection("Visualizar Itens")
+EspTab:CreateSection("Visualizar Murderer")
 
 EspTab:CreateToggle({
-   Name = "Visualizar Itens",
-   CurrentValue = false,
-   Callback = function(Value)
-      ESP.Items.Enabled = Value
-   end,
-})
-
-EspTab:CreateColorPicker({
-   Name = "Cor dos Itens",
-   Color = ESP.Items.Color,
-   Callback = function(Value)
-      ESP.Items.Color = Value
-   end,
-})
-
-EspTab:CreateSection("Visualizar Entidades")
-
-EspTab:CreateToggle({
-   Name = "Visualizar Entidades (Murderer)",
+   Name = "Visualizar Murderer",
    CurrentValue = false,
    Callback = function(Value)
       ESP.Entities.Enabled = Value
@@ -190,17 +170,35 @@ EspTab:CreateToggle({
 })
 
 EspTab:CreateColorPicker({
-   Name = "Cor das Entidades",
+   Name = "Cor do Murderer",
    Color = ESP.Entities.Color,
    Callback = function(Value)
       ESP.Entities.Color = Value
    end,
 })
 
+EspTab:CreateSection("Visualizar Xerife")
+
+EspTab:CreateToggle({
+   Name = "Visualizar Xerife",
+   CurrentValue = false,
+   Callback = function(Value)
+      ESP.Sheriff.Enabled = Value
+   end,
+})
+
+EspTab:CreateColorPicker({
+   Name = "Cor do Xerife",
+   Color = ESP.Sheriff.Color,
+   Callback = function(Value)
+      ESP.Sheriff.Color = Value
+   end,
+})
+
 EspTab:CreateSection("Visualizar Players")
 
 EspTab:CreateToggle({
-   Name = "Visualizar Players",
+   Name = "Visualizar Todos os Players",
    CurrentValue = false,
    Callback = function(Value)
       ESP.Players.Enabled = Value
@@ -215,7 +213,7 @@ EspTab:CreateColorPicker({
    end,
 })
 
--- ==================== ABA STAMINA ====================
+-- Stamina Tab
 StaminaTab:CreateSection("Stamina")
 
 StaminaTab:CreateToggle({
@@ -229,16 +227,14 @@ StaminaTab:CreateToggle({
    end,
 })
 
--- ==================== NOVA ABA MONEY ====================
+-- Money Tab
 MoneyTab:CreateSection("Adicionar Dinheiro")
 
 local MoneyInput = MoneyTab:CreateInput({
    Name = "Quantidade de Dinheiro",
    PlaceholderText = "Digite o valor (ex: 5000)",
    RemoveTextOnFocusLost = false,
-   Callback = function(Text)
-      -- Não faz nada aqui, só captura o texto
-   end,
+   Callback = function() end,
 })
 
 MoneyTab:CreateButton({
@@ -248,14 +244,14 @@ MoneyTab:CreateButton({
       if amount then
          AddMoney(amount)
       else
-         Rayfield:Notify({Title = "Erro", Content = "Por favor, digite um número válido!", Duration = 3})
+         Rayfield:Notify({Title = "Erro", Content = "Digite um número válido!", Duration = 3})
       end
    end,
 })
 
 -- ==================== LOOP ====================
 RunService.RenderStepped:Connect(function()
-    if ESP.Items.Enabled or ESP.Entities.Enabled or ESP.Players.Enabled then
+    if ESP.Entities.Enabled or ESP.Sheriff.Enabled or ESP.Players.Enabled then
         UpdateESP()
     else
         ClearHighlights()
