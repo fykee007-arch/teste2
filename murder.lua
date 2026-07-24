@@ -46,7 +46,6 @@ local function CreateHighlight(target, color)
     table.insert(highlights, hl)
 end
 
--- Detecção por Inventário
 local function GetRole(plr)
     if not plr or plr == player then return "None" end
     
@@ -81,61 +80,78 @@ local function UpdateESP()
 
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr == player or not plr.Character then continue end
-        
         local role = GetRole(plr)
         
         if ESP.Murderer.Enabled and role == "Murderer" then
             CreateHighlight(plr.Character, ESP.Murderer.Color)
         end
-        
         if ESP.Sheriff.Enabled and role == "Sheriff" then
             CreateHighlight(plr.Character, ESP.Sheriff.Color)
         end
-        
         if ESP.Players.Enabled then
             CreateHighlight(plr.Character, ESP.Players.Color)
         end
     end
 end
 
--- ==================== MODIFICADOR DE MOEDAS ====================
+-- ==================== DETECÇÃO AUTOMÁTICA DE MOEDA ====================
+local function GetMoneyValue()
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if not leaderstats then return nil end
+
+    -- Possíveis nomes comuns de moeda
+    local possibleNames = {"Money", "Coins", "Cash", "Points", "Gold", "Balance", "Currency"}
+    
+    for _, name in ipairs(possibleNames) do
+        local value = leaderstats:FindFirstChild(name)
+        if value and (value:IsA("IntValue") or value:IsA("NumberValue")) then
+            return value
+        end
+    end
+    
+    -- Se não encontrar pelo nome, pega o primeiro valor numérico
+    for _, v in pairs(leaderstats:GetChildren()) do
+        if v:IsA("IntValue") or v:IsA("NumberValue") then
+            return v
+        end
+    end
+    
+    return nil
+end
+
 local function AddMoney(amount)
     if not amount or amount <= 0 then 
         Rayfield:Notify({Title = "Erro", Content = "Digite um valor válido!", Duration = 3})
         return 
     end
 
-    local leaderstats = player:FindFirstChild("leaderstats")
-    if not leaderstats then
-        Rayfield:Notify({Title = "Erro", Content = "Leaderstats não encontrado.", Duration = 4})
-        return
-    end
-
-    local moneyValue = leaderstats:FindFirstChild("Money") or 
-                      leaderstats:FindFirstChild("Coins") or 
-                      leaderstats:FindFirstChild("Cash")
-
+    local moneyValue = GetMoneyValue()
+    
     if moneyValue then
         local targetValue = moneyValue.Value + amount
         moneyValue.Value = targetValue
         
         -- Força o valor por alguns segundos
         task.spawn(function()
-            for i = 1, 20 do
-                if moneyValue.Value ~= targetValue then
+            for i = 1, 25 do
+                if moneyValue.Value < targetValue then
                     moneyValue.Value = targetValue
                 end
-                task.wait(0.15)
+                task.wait(0.1)
             end
         end)
 
         Rayfield:Notify({
             Title = "Sucesso!", 
-            Content = "Adicionado +" .. amount .. " de dinheiro!", 
+            Content = "Adicionado +" .. amount .. " (" .. moneyValue.Name .. ")", 
             Duration = 5
         })
     else
-        Rayfield:Notify({Title = "Erro", Content = "Não foi possível encontrar seu dinheiro.", Duration = 4})
+        Rayfield:Notify({
+            Title = "Erro", 
+            Content = "Não foi possível encontrar o sistema de dinheiro.", 
+            Duration = 5
+        })
     end
 end
 
@@ -144,70 +160,28 @@ local MainTab = Window:CreateTab("🏠 Main", 4483362458)
 local EspTab = Window:CreateTab("ESP", 4483362458)
 local MoneyTab = Window:CreateTab("💰 Money", 6031097228)
 
--- Main Tab
+-- Main
 MainTab:CreateSection("Murder Nice")
 
--- ESP Tab
+-- ESP
 EspTab:CreateSection("Visualizar Murderer")
-
-EspTab:CreateToggle({
-   Name = "Visualizar Murderer",
-   CurrentValue = false,
-   Callback = function(Value)
-      ESP.Murderer.Enabled = Value
-   end,
-})
-
-EspTab:CreateColorPicker({
-   Name = "Cor do Murderer",
-   Color = ESP.Murderer.Color,
-   Callback = function(Value)
-      ESP.Murderer.Color = Value
-   end,
-})
+EspTab:CreateToggle({Name = "Visualizar Murderer", CurrentValue = false, Callback = function(v) ESP.Murderer.Enabled = v end})
+EspTab:CreateColorPicker({Name = "Cor do Murderer", Color = ESP.Murderer.Color, Callback = function(v) ESP.Murderer.Color = v end})
 
 EspTab:CreateSection("Visualizar Xerife")
-
-EspTab:CreateToggle({
-   Name = "Visualizar Xerife",
-   CurrentValue = false,
-   Callback = function(Value)
-      ESP.Sheriff.Enabled = Value
-   end,
-})
-
-EspTab:CreateColorPicker({
-   Name = "Cor do Xerife",
-   Color = ESP.Sheriff.Color,
-   Callback = function(Value)
-      ESP.Sheriff.Color = Value
-   end,
-})
+EspTab:CreateToggle({Name = "Visualizar Xerife", CurrentValue = false, Callback = function(v) ESP.Sheriff.Enabled = v end})
+EspTab:CreateColorPicker({Name = "Cor do Xerife", Color = ESP.Sheriff.Color, Callback = function(v) ESP.Sheriff.Color = v end})
 
 EspTab:CreateSection("Visualizar Players")
+EspTab:CreateToggle({Name = "Visualizar Todos os Players", CurrentValue = false, Callback = function(v) ESP.Players.Enabled = v end})
+EspTab:CreateColorPicker({Name = "Cor dos Players", Color = ESP.Players.Color, Callback = function(v) ESP.Players.Color = v end})
 
-EspTab:CreateToggle({
-   Name = "Visualizar Todos os Players",
-   CurrentValue = false,
-   Callback = function(Value)
-      ESP.Players.Enabled = Value
-   end,
-})
-
-EspTab:CreateColorPicker({
-   Name = "Cor dos Players",
-   Color = ESP.Players.Color,
-   Callback = function(Value)
-      ESP.Players.Color = Value
-   end,
-})
-
--- Money Tab
+-- Money
 MoneyTab:CreateSection("Adicionar Dinheiro")
 
 local MoneyInput = MoneyTab:CreateInput({
-   Name = "Quantidade de Dinheiro",
-   PlaceholderText = "Ex: 5000",
+   Name = "Quantidade",
+   PlaceholderText = "Ex: 10000",
    RemoveTextOnFocusLost = false,
    Callback = function() end,
 })
@@ -224,7 +198,7 @@ MoneyTab:CreateButton({
    end,
 })
 
--- ==================== LOOP ====================
+-- Loop
 RunService.RenderStepped:Connect(function()
     if ESP.Murderer.Enabled or ESP.Sheriff.Enabled or ESP.Players.Enabled then
         UpdateESP()
@@ -234,7 +208,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 Rayfield:Notify({
-   Title = "Murder Nice",
-   Content = "Script carregado com sucesso!",
-   Duration = 5,
+   Title = "Murder Nice 1.1",
+   Content = "Script carregado! (Detector de moeda automático)",
+   Duration = 6,
 })
