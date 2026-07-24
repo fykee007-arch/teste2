@@ -1,59 +1,25 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "# Murder Nice",
    LoadingTitle = "Murder Mystery 2",
    LoadingSubtitle = "by Grok",
-   ConfigurationSaving = {
-      Enabled = false,
-   },
-   Discord = {
-      Enabled = false,
-   },
+   ConfigurationSaving = { Enabled = false },
+   Discord = { Enabled = false },
    KeySystem = false,
 })
 
+local player = Players.LocalPlayer
+
 local MainTab = Window:CreateTab("🏠 Main", 4483362458)
 
--- ESP Section
-MainTab:CreateSection("ESP")
-
-local ToggleAll = MainTab:CreateToggle({
-   Name = "Visualizar Jogadores",
-   CurrentValue = false,
-   Callback = function(Value)
-      ESP_All = Value
-   end,
-})
-
-local ToggleRoles = MainTab:CreateToggle({
-   Name = "Visualizar Murder & Xerife",
-   CurrentValue = false,
-   Callback = function(Value)
-      ESP_Roles = Value
-   end,
-})
-
--- Cores (usando Dropdown como exemplo)
-MainTab:CreateSection("Cores")
-
-local AllColorDropdown = MainTab:CreateDropdown({
-   Name = "Cor dos Jogadores",
-   Options = {"Verde", "Azul", "Roxo", "Amarelo"},
-   CurrentOption = {"Verde"},
-   MultipleOptions = false,
-   Callback = function(Option)
-      if Option[1] == "Verde" then Color_All = Color3.fromHex("#00bf63")
-      elseif Option[1] == "Azul" then Color_All = Color3.fromHex("#5696e3")
-      elseif Option[1] == "Roxo" then Color_All = Color3.fromHex("#c452c4")
-      elseif Option[1] == "Amarelo" then Color_All = Color3.fromHex("#ffd700") end
-   end,
-})
-
--- ESP Logic
+-- Variáveis ESP
 local ESP_All = false
 local ESP_Roles = false
-local Color_All = Color3.fromHex("#00bf63")
+local Color_All = Color3.fromHex("#00bf63")  -- Cor padrão dos jogadores
 local Color_Murder = Color3.fromHex("#c90e0e")
 local Color_Sheriff = Color3.fromHex("#5696e3")
 
@@ -105,16 +71,39 @@ local function UpdateESP()
 end
 
 RunService.RenderStepped:Connect(function()
-	if ESP_All or ESP_Roles then
-		UpdateESP()
-	else
-		ClearHighlights()
-	end
+	if ESP_All or ESP_Roles then UpdateESP() else ClearHighlights() end
 end)
 
+-- Interface
+MainTab:CreateSection("ESP")
+
+MainTab:CreateToggle({
+   Name = "Visualizar Todos os Jogadores",
+   CurrentValue = false,
+   Callback = function(Value)
+      ESP_All = Value
+   end,
+})
+
+-- Color Picker para Jogadores
+MainTab:CreateColorPicker({
+   Name = "Cor dos Jogadores",
+   Color = Color_All,
+   Callback = function(Value)
+      Color_All = Value
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "Visualizar Murder & Xerife",
+   CurrentValue = false,
+   Callback = function(Value)
+      ESP_Roles = Value
+   end,
+})
+
 Rayfield:Notify({
-   Title = "Murder Nice",
-   Content = "Script carregado com sucesso!",
-   Duration = 5,
-   Image = 4483362458,
+   Title = "Sucesso!",
+   Content = "Menu carregado - Use os toggles acima",
+   Duration = 6,
 })
