@@ -16,10 +16,10 @@ local player = Players.LocalPlayer
 
 local MainTab = Window:CreateTab("🏠 Main", 4483362458)
 
--- Variáveis ESP
+-- Variáveis
 local ESP_All = false
 local ESP_Roles = false
-local Color_All = Color3.fromHex("#00bf63")  -- Cor padrão dos jogadores
+local Color_All = Color3.fromHex("#00bf63")
 local Color_Murder = Color3.fromHex("#c90e0e")
 local Color_Sheriff = Color3.fromHex("#5696e3")
 
@@ -37,23 +37,49 @@ local function CreateHighlight(char, color)
 	hl.Adornee = char
 	hl.FillColor = color
 	hl.OutlineColor = color
-	hl.FillTransparency = 0.7
-	hl.OutlineTransparency = 0.3
+	hl.FillTransparency = 0.65
+	hl.OutlineTransparency = 0.25
 	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	hl.Parent = char
 	table.insert(highlights, hl)
 end
 
 local function GetRole(plr)
+	if not plr then return "Innocent" end
+	
+	-- Leaderstats (principal)
 	local ls = plr:FindFirstChild("leaderstats")
 	if ls then
-		local role = ls:FindFirstChild("Role") or ls:FindFirstChild("role")
-		if role then
-			local r = tostring(role.Value):lower()
-			if r:find("murder") then return "Murderer" end
-			if r:find("sheriff") or r:find("xerife") then return "Sheriff" end
+		for _, v in pairs(ls:GetChildren()) do
+			if v:IsA("StringValue") then
+				local val = tostring(v.Value):lower()
+				if val:find("murderer") or val:find("murd") then return "Murderer" end
+				if val:find("sheriff") or val:find("xerife") then return "Sheriff" end
+			end
 		end
 	end
+	
+	-- Backup: Tools no Backpack ou Character
+	local backpack = plr:FindFirstChild("Backpack")
+	if backpack then
+		for _, tool in ipairs(backpack:GetChildren()) do
+			local n = tool.Name:lower()
+			if n:find("knife") or n:find("murd") then return "Murderer" end
+			if n:find("gun") or n:find("pistol") or n:find("sheriff") then return "Sheriff" end
+		end
+	end
+	
+	local char = plr.Character
+	if char then
+		for _, tool in ipairs(char:GetChildren()) do
+			if tool:IsA("Tool") then
+				local n = tool.Name:lower()
+				if n:find("knife") then return "Murderer" end
+				if n:find("gun") then return "Sheriff" end
+			end
+		end
+	end
+	
 	return "Innocent"
 end
 
@@ -62,19 +88,30 @@ local function UpdateESP()
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr == player or not plr.Character then continue end
 		local role = GetRole(plr)
-		if ESP_All then CreateHighlight(plr.Character, Color_All) end
+		
+		if ESP_All then
+			CreateHighlight(plr.Character, Color_All)
+		end
+		
 		if ESP_Roles then
-			if role == "Murderer" then CreateHighlight(plr.Character, Color_Murder)
-			elseif role == "Sheriff" then CreateHighlight(plr.Character, Color_Sheriff) end
+			if role == "Murderer" then
+				CreateHighlight(plr.Character, Color_Murder)
+			elseif role == "Sheriff" then
+				CreateHighlight(plr.Character, Color_Sheriff)
+			end
 		end
 	end
 end
 
 RunService.RenderStepped:Connect(function()
-	if ESP_All or ESP_Roles then UpdateESP() else ClearHighlights() end
+	if ESP_All or ESP_Roles then
+		UpdateESP()
+	else
+		ClearHighlights()
+	end
 end)
 
--- Interface
+-- UI
 MainTab:CreateSection("ESP")
 
 MainTab:CreateToggle({
@@ -85,7 +122,6 @@ MainTab:CreateToggle({
    end,
 })
 
--- Color Picker para Jogadores
 MainTab:CreateColorPicker({
    Name = "Cor dos Jogadores",
    Color = Color_All,
@@ -103,7 +139,7 @@ MainTab:CreateToggle({
 })
 
 Rayfield:Notify({
-   Title = "Sucesso!",
-   Content = "Menu carregado - Use os toggles acima",
+   Title = "Murder Nice",
+   Content = "Script carregado! Teste o ESP de Murder agora.",
    Duration = 6,
 })
