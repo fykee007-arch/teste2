@@ -19,8 +19,8 @@ local player = Players.LocalPlayer
 local highlights = {}
 
 local ESP = {
-    Entities = {Enabled = false, Color = Color3.fromHex("#ff1100")},   -- Murderer
-    Sheriff = {Enabled = false, Color = Color3.fromHex("#5696e3")},   -- Xerife (novo)
+    Murderer = {Enabled = false, Color = Color3.fromHex("#ff1100")},
+    Sheriff = {Enabled = false, Color = Color3.fromHex("#5696e3")},
     Players = {Enabled = false, Color = Color3.fromHex("#c452c4")}
 }
 
@@ -49,39 +49,29 @@ local function CreateHighlight(target, color)
     table.insert(highlights, hl)
 end
 
--- Detecção por Inventário (mais confiável no MM2)
+-- Detecção por Inventário
 local function GetRole(plr)
     if not plr or plr == player then return "None" end
     
     local backpack = plr:FindFirstChild("Backpack")
     local character = plr.Character
     
-    -- Verificar Backpack
     if backpack then
         for _, tool in ipairs(backpack:GetChildren()) do
             if tool:IsA("Tool") then
                 local name = tool.Name:lower()
-                if name:find("knife") or name:find("murd") then
-                    return "Murderer"
-                end
-                if name:find("gun") or name:find("pistol") or name:find("sheriff") then
-                    return "Sheriff"
-                end
+                if name:find("knife") or name:find("murd") then return "Murderer" end
+                if name:find("gun") or name:find("pistol") or name:find("sheriff") then return "Sheriff" end
             end
         end
     end
     
-    -- Verificar Character
     if character then
         for _, tool in ipairs(character:GetChildren()) do
             if tool:IsA("Tool") then
                 local name = tool.Name:lower()
-                if name:find("knife") or name:find("murd") then
-                    return "Murderer"
-                end
-                if name:find("gun") or name:find("pistol") or name:find("sheriff") then
-                    return "Sheriff"
-                end
+                if name:find("knife") or name:find("murd") then return "Murderer" end
+                if name:find("gun") or name:find("pistol") or name:find("sheriff") then return "Sheriff" end
             end
         end
     end
@@ -97,17 +87,14 @@ local function UpdateESP()
         
         local role = GetRole(plr)
         
-        -- Murderer
-        if ESP.Entities.Enabled and role == "Murderer" then
-            CreateHighlight(plr.Character, ESP.Entities.Color)
+        if ESP.Murderer.Enabled and role == "Murderer" then
+            CreateHighlight(plr.Character, ESP.Murderer.Color)
         end
         
-        -- Sheriff (Xerife)
         if ESP.Sheriff.Enabled and role == "Sheriff" then
             CreateHighlight(plr.Character, ESP.Sheriff.Color)
         end
         
-        -- Todos os Players
         if ESP.Players.Enabled then
             CreateHighlight(plr.Character, ESP.Players.Color)
         end
@@ -139,12 +126,10 @@ local function AddMoney(amount)
     
     local leaderstats = player:FindFirstChild("leaderstats")
     if leaderstats then
-        local moneyValue = leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Coins") or leaderstats:FindFirstChild("Cash")
-        if moneyValue then
-            moneyValue.Value = moneyValue.Value + amount
-            Rayfield:Notify({Title = "Sucesso!", Content = "Adicionado +" .. amount .. "!", Duration = 4})
-        else
-            Rayfield:Notify({Title = "Erro", Content = "Não foi possível encontrar o dinheiro.", Duration = 4})
+        local money = leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Coins") or leaderstats:FindFirstChild("Cash")
+        if money then
+            money.Value = money.Value + amount
+            Rayfield:Notify({Title = "Sucesso", Content = "+" .. amount .. " adicionado!", Duration = 4})
         end
     end
 end
@@ -155,25 +140,25 @@ local EspTab = Window:CreateTab("ESP", 4483362458)
 local StaminaTab = Window:CreateTab("Stamina", 6031097228)
 local MoneyTab = Window:CreateTab("💰 Money", 6031097228)
 
--- Main Tab
+-- Main
 MainTab:CreateSection("Murder Nice")
 
--- ==================== ABA ESP ====================
+-- ESP Tab
 EspTab:CreateSection("Visualizar Murderer")
 
 EspTab:CreateToggle({
    Name = "Visualizar Murderer",
    CurrentValue = false,
    Callback = function(Value)
-      ESP.Entities.Enabled = Value
+      ESP.Murderer.Enabled = Value
    end,
 })
 
 EspTab:CreateColorPicker({
    Name = "Cor do Murderer",
-   Color = ESP.Entities.Color,
+   Color = ESP.Murderer.Color,
    Callback = function(Value)
-      ESP.Entities.Color = Value
+      ESP.Murderer.Color = Value
    end,
 })
 
@@ -221,9 +206,7 @@ StaminaTab:CreateToggle({
    CurrentValue = false,
    Callback = function(Value)
       InfiniteStaminaEnabled = Value
-      if Value then
-         StartInfiniteStamina()
-      end
+      if Value then StartInfiniteStamina() end
    end,
 })
 
@@ -231,8 +214,8 @@ StaminaTab:CreateToggle({
 MoneyTab:CreateSection("Adicionar Dinheiro")
 
 local MoneyInput = MoneyTab:CreateInput({
-   Name = "Quantidade de Dinheiro",
-   PlaceholderText = "Digite o valor (ex: 5000)",
+   Name = "Quantidade",
+   PlaceholderText = "Ex: 10000",
    RemoveTextOnFocusLost = false,
    Callback = function() end,
 })
@@ -249,9 +232,9 @@ MoneyTab:CreateButton({
    end,
 })
 
--- ==================== LOOP ====================
+-- Loop ESP
 RunService.RenderStepped:Connect(function()
-    if ESP.Entities.Enabled or ESP.Sheriff.Enabled or ESP.Players.Enabled then
+    if ESP.Murderer.Enabled or ESP.Sheriff.Enabled or ESP.Players.Enabled then
         UpdateESP()
     else
         ClearHighlights()
@@ -260,6 +243,6 @@ end)
 
 Rayfield:Notify({
    Title = "Murder Nice",
-   Content = "Script carregado com sucesso!",
+   Content = "Script carregado!",
    Duration = 5,
 })
