@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -23,8 +22,6 @@ local ESP = {
     Sheriff = {Enabled = false, Color = Color3.fromHex("#5696e3")},
     Players = {Enabled = false, Color = Color3.fromHex("#c452c4")}
 }
-
-local InfiniteStaminaEnabled = false
 
 -- ==================== FUNÇÕES ====================
 local function ClearHighlights()
@@ -49,7 +46,7 @@ local function CreateHighlight(target, color)
     table.insert(highlights, hl)
 end
 
--- Detecção por Inventário
+-- Detecção por Inventário (Murderer e Sheriff)
 local function GetRole(plr)
     if not plr or plr == player then return "None" end
     
@@ -101,46 +98,53 @@ local function UpdateESP()
     end
 end
 
-local function StartInfiniteStamina()
-    task.spawn(function()
-        while InfiniteStaminaEnabled do
-            local char = player.Character
-            if char then
-                local humanoid = char:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:SetAttribute("Stamina", 100)
-                    humanoid:SetAttribute("SprintSpeed", 100)
-                end
-            end
-            task.wait(0.1)
-        end
-    end)
-end
-
--- ==================== MONEY ====================
+-- ==================== MODIFICADOR DE MOEDAS (Melhorado) ====================
 local function AddMoney(amount)
     if not amount or amount <= 0 then 
         Rayfield:Notify({Title = "Erro", Content = "Digite um valor válido!", Duration = 3})
         return 
     end
-    
+
     local leaderstats = player:FindFirstChild("leaderstats")
-    if leaderstats then
-        local money = leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Coins") or leaderstats:FindFirstChild("Cash")
-        if money then
-            money.Value = money.Value + amount
-            Rayfield:Notify({Title = "Sucesso", Content = "+" .. amount .. " adicionado!", Duration = 4})
-        end
+    if not leaderstats then
+        Rayfield:Notify({Title = "Erro", Content = "Leaderstats não encontrado.", Duration = 4})
+        return
+    end
+
+    local moneyValue = leaderstats:FindFirstChild("Money") or 
+                      leaderstats:FindFirstChild("Coins") or 
+                      leaderstats:FindFirstChild("Cash")
+
+    if moneyValue then
+        local oldValue = moneyValue.Value
+        moneyValue.Value = oldValue + amount
+        
+        -- Tenta manter o valor (alguns anti-cheats revertem)
+        task.spawn(function()
+            for i = 1, 15 do
+                if moneyValue.Value ~= oldValue + amount then
+                    moneyValue.Value = oldValue + amount
+                end
+                task.wait(0.2)
+            end
+        end)
+
+        Rayfield:Notify({
+            Title = "Sucesso!", 
+            Content = "Adicionado +" .. amount .. " de dinheiro!", 
+            Duration = 5
+        })
+    else
+        Rayfield:Notify({Title = "Erro", Content = "Valor de dinheiro não encontrado.", Duration = 4})
     end
 end
 
 -- ==================== UI ====================
 local MainTab = Window:CreateTab("🏠 Main", 4483362458)
 local EspTab = Window:CreateTab("ESP", 4483362458)
-local StaminaTab = Window:CreateTab("Stamina", 6031097228)
 local MoneyTab = Window:CreateTab("💰 Money", 6031097228)
 
--- Main
+-- Main Tab
 MainTab:CreateSection("Murder Nice")
 
 -- ESP Tab
@@ -198,24 +202,12 @@ EspTab:CreateColorPicker({
    end,
 })
 
--- Stamina Tab
-StaminaTab:CreateSection("Stamina")
-
-StaminaTab:CreateToggle({
-   Name = "Stamina Infinita",
-   CurrentValue = false,
-   Callback = function(Value)
-      InfiniteStaminaEnabled = Value
-      if Value then StartInfiniteStamina() end
-   end,
-})
-
 -- Money Tab
 MoneyTab:CreateSection("Adicionar Dinheiro")
 
 local MoneyInput = MoneyTab:CreateInput({
-   Name = "Quantidade",
-   PlaceholderText = "Ex: 10000",
+   Name = "Quantidade de Dinheiro",
+   PlaceholderText = "Ex: 5000 ou 10000",
    RemoveTextOnFocusLost = false,
    Callback = function() end,
 })
@@ -227,12 +219,12 @@ MoneyTab:CreateButton({
       if amount then
          AddMoney(amount)
       else
-         Rayfield:Notify({Title = "Erro", Content = "Digite um número válido!", Duration = 3})
+         Rayfield:Notify({Title = "Erro", Content = "Por favor, digite um número válido!", Duration = 3})
       end
    end,
 })
 
--- Loop ESP
+-- ==================== LOOP ESP ====================
 RunService.RenderStepped:Connect(function()
     if ESP.Murderer.Enabled or ESP.Sheriff.Enabled or ESP.Players.Enabled then
         UpdateESP()
@@ -243,6 +235,6 @@ end)
 
 Rayfield:Notify({
    Title = "Murder Nice",
-   Content = "Script carregado!",
+   Content = "Script carregado com sucesso!",
    Duration = 5,
 })
